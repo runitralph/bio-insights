@@ -10,13 +10,11 @@ This project repo aims to demonstrate the application of modern tools such as My
 
 ## Code Snippets
 
-### SQL: Building a protein database
+### SQL: Building a protein database - [protein_db.sql](https://github.com/runitralph/script-sandbox/blob/main/protein_db.sql)
 
-The following MySQL code was used to create a table to store the protein data:
+The following MySQL code was used to create a `proteins` table to store the protein data:
 
 ```sql
-CREATE DATABASE protein_db;
-USE protein_db;
 
 CREATE TABLE proteins (
     id INT AUTO_INCREMENT PRIMARY KEY,
@@ -25,12 +23,19 @@ CREATE TABLE proteins (
     description TEXT
 );
 ```
-### Python: Updating the database and analysing proteins
+### Python: Updating the database and analysing proteins - [protein_db_analysis.py](https://github.com/runitralph/script-sandbox/blob/main/protein_db_analysis.py)
 
 Various python functions were called to read csv files containing all PDB IDs, fetch FASTA sequences from the RCSB, parse the FASTA sequences, and insert the sequences alongside PDB IDs into the MySQL table created above.
 
+Dependencies:
 ```python
-# Function to use PDB IDs to fetch FASTA sequences
+import os
+import csv
+import requests
+import mysql.connector
+```
+Using PDB IDs to fetch FASTA sequences:
+```python
 def fetch_fasta(pdb_id):
     url = f'https://www.rcsb.org/fasta/entry/{pdb_id}'
     response = requests.get(url)
@@ -39,8 +44,9 @@ def fetch_fasta(pdb_id):
     else:
         print(f"Failed to fetch data for PDB ID {pdb_id}")
         return None
-
-# Function to parse FASTA sequences
+```
+Parsing FASTA sequences:
+```python
 def parse_fasta(fasta_text):
     sequences = []
     sequence = ''
@@ -59,8 +65,9 @@ def parse_fasta(fasta_text):
     if sequence:
         sequences.append((name, sequence, description))
     return sequences
-
-# Function to insert protein sequences into MySQL database
+```
+Insert protein sequences into MySQL database:
+```python
 def insert_proteins(sequences):
     conn = mysql.connector.connect(
         host="host_name",
@@ -77,22 +84,9 @@ def insert_proteins(sequences):
     conn.commit()
     cur.close()
     conn.close()
-
-# Function to fetch, parse, and insert sequences for a list of PDB IDs
-def main(pdb_ids):
-    all_sequences = []
-    for pdb_id in pdb_ids:
-        fasta_text = fetch_fasta(pdb_id)
-        if fasta_text:
-            sequences = parse_fasta(fasta_text)
-            all_sequences.extend(sequences)
-    insert_proteins(all_sequences)
 ```
-
-The molecular weight for each protein in the database was then calculated using a dictionary containing the known molecular weight for each amino acid, and the results were output to a new csv file.
-
+Retrieving and analysing protein sequences from MySQL database, and writing output to `protein_analysis.csv`:
 ```python
-# Analysis Script: Retrieve and analyze protein sequences from MySQL database
 def get_proteins():
     conn = mysql.connector.connect(
         host="host_name",
@@ -120,7 +114,7 @@ def calculate_molecular_weight(sequence):
             print(f"Ignoring unknown amino acid: {aa}")
     return molecular_weight
 
-def analyze_proteins():
+def analyse_proteins():
     proteins = get_proteins()
     with open('protein_analysis.csv', 'w', newline='') as csvfile:
         fieldnames = ['Protein ID', 'Name', 'Molecular Weight']
